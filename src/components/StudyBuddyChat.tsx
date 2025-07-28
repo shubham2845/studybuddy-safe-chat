@@ -123,7 +123,12 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
       }
 
       const data = await response.json();
-      return data.choices[0]?.message?.content || "I'm having trouble responding right now. Please try again! 🤔";
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        console.error('Invalid API response:', data);
+        return "I'm having trouble responding right now. Please try again! 🤔";
+      }
+      return content;
     } catch (error) {
       console.error('Error generating response:', error);
       return "I'm having trouble connecting right now. Please check your API key and try again! 🔧";

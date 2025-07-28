@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, BookOpen, Shield, Lock } from 'lucide-react';
+import { Send, BookOpen, Shield, Lock, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ContentFilter } from './ContentFilter';
 import { OTPLockScreen } from './OTPLockScreen';
 import { ParentSetup } from './ParentSetup';
+import { ApiKeySetup } from './ApiKeySetup';
 
 interface Message {
   id: string;
@@ -32,6 +33,9 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
   const [isLocked, setIsLocked] = useState(false);
   const [parentEmail, setParentEmail] = useState('');
   const [showParentSetup, setShowParentSetup] = useState(true);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
+  const [showApiSetup, setShowApiSetup] = useState(!localStorage.getItem('openai_api_key'));
+  const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -73,44 +77,60 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
     });
   };
 
-  const generateStudyResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase();
-    
-    // Math responses
-    if (message.includes('math') || message.includes('algebra') || message.includes('geometry')) {
-      return "Great! Math is such an important subject! 🧮 What specific math topic are you working on? I can help with algebra, geometry, fractions, or any other math concepts!";
+  const generateStudyResponse = async (userMessage: string): Promise<string> => {
+    if (!apiKey) {
+      return "Please set up your OpenAI API key to get personalized study responses! 🔑";
     }
-    
-    // Science responses
-    if (message.includes('science') || message.includes('biology') || message.includes('chemistry') || message.includes('physics')) {
-      return "Science is fascinating! 🔬 Are you studying biology, chemistry, physics, or earth science? I'd love to help you understand any scientific concepts!";
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a helpful, encouraging study buddy for students. Your responses should be:
+              - Educational and supportive
+              - Age-appropriate and safe
+              - Encouraging and positive
+              - Focused on helping with studies
+              - Include relevant emojis to make learning fun
+              - Keep responses concise but informative
+              - Always encourage learning and curiosity
+              
+              If asked about non-educational topics, gently redirect to studies.`
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 200,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from OpenAI');
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "I'm having trouble responding right now. Please try again! 🤔";
+    } catch (error) {
+      console.error('Error generating response:', error);
+      return "I'm having trouble connecting right now. Please check your API key and try again! 🔧";
+    } finally {
+      setIsGenerating(false);
     }
-    
-    // History responses
-    if (message.includes('history') || message.includes('historical')) {
-      return "History helps us understand our world! 📜 What time period or historical events are you studying? I can help with world history, American history, or any specific historical topics!";
-    }
-    
-    // Literature responses
-    if (message.includes('literature') || message.includes('reading') || message.includes('book')) {
-      return "Reading and literature are wonderful! 📖 Are you working on a specific book, poem, or writing assignment? I can help with comprehension, analysis, or writing techniques!";
-    }
-    
-    // Study tips
-    if (message.includes('study') || message.includes('learn') || message.includes('homework')) {
-      return "Here are some great study tips! 📝 1) Take breaks every 30 minutes, 2) Make flashcards for key concepts, 3) Teach someone else what you learned, 4) Practice problems regularly. What subject do you need help studying?";
-    }
-    
-    // Encouragement for effort
-    if (message.includes('difficult') || message.includes('hard') || message.includes('confused')) {
-      return "Don't worry! Learning can be challenging, and that's totally normal! 💪 Every expert was once a beginner. Let's break down what you're finding difficult into smaller, easier steps. What specific part is confusing you?";
-    }
-    
-    // Default educational response
-    return `That's an interesting question! Let me help you learn about that. 🌟 Could you tell me more about what specific aspect you'd like to understand better? I'm here to make learning fun and easy!`;
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -130,18 +150,27 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
     }
 
     // Generate bot response
+    const responseText = await generateStudyResponse(inputValue);
     const botResponse: Message = {
       id: (Date.now() + 1).toString(),
-      text: generateStudyResponse(inputValue),
+      text: responseText,
       isUser: false,
       timestamp: new Date()
     };
 
-    setTimeout(() => {
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
-
+    setMessages(prev => [...prev, botResponse]);
     setInputValue('');
+  };
+
+  const handleApiKeySetup = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('openai_api_key', key);
+    setShowApiSetup(false);
+    toast({
+      title: "API Key Saved",
+      description: "OpenAI API key configured. Study buddy is ready!",
+      variant: "default"
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -152,6 +181,10 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
 
   if (showParentSetup) {
     return <ParentSetup onSetup={handleParentSetup} />;
+  }
+
+  if (showApiSetup) {
+    return <ApiKeySetup onSetup={handleApiKeySetup} />;
   }
 
   if (isLocked) {
@@ -215,8 +248,12 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
             placeholder="Ask me about your studies..."
             className="flex-1"
           />
-          <Button onClick={handleSendMessage} className="px-6">
-            <Send className="h-4 w-4" />
+          <Button onClick={handleSendMessage} className="px-6" disabled={isGenerating}>
+            {isGenerating ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground text-center mt-2 max-w-4xl mx-auto">

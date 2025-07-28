@@ -114,7 +114,7 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
             }
           ],
           temperature: 0.7,
-          max_tokens: 200,
+          max_tokens: 500,
         }),
       });
 

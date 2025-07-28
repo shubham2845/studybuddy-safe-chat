@@ -17,12 +17,12 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSetup }) => {
     e.preventDefault();
     
     if (!apiKey.trim()) {
-      setError('Please enter your OpenAI API key');
+      setError('Please enter your Deepseek API key');
       return;
     }
 
-    if (!apiKey.startsWith('sk-')) {
-      setError('OpenAI API keys should start with "sk-"');
+    if (!apiKey.startsWith('sk-or-v1-')) {
+      setError('Deepseek API keys should start with "sk-or-v1-"');
       return;
     }
 
@@ -39,20 +39,20 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSetup }) => {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Setup API Key</h1>
           <p className="text-muted-foreground">
-            Enter your OpenAI API key to enable AI-powered study responses
+            Enter your Deepseek API key to enable AI-powered study responses
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="apiKey" className="text-sm font-medium text-foreground">
-              OpenAI API Key
+              Deepseek API Key
             </label>
             <div className="relative">
               <Input
                 id="apiKey"
                 type={showKey ? 'text' : 'password'}
-                placeholder="sk-..."
+                placeholder="sk-or-v1-..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="pr-10"
@@ -85,16 +85,16 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSetup }) => {
           <div className="border-t pt-3">
             <h3 className="font-medium text-foreground mb-2">How to get your API key:</h3>
             <ol className="list-decimal list-inside space-y-1">
-              <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com/api-keys</a></li>
-              <li>Sign in to your OpenAI account</li>
-              <li>Click "Create new secret key"</li>
+              <li>Go to <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openrouter.ai/keys</a></li>
+              <li>Sign in to your OpenRouter account</li>
+              <li>Click "Create Key"</li>
               <li>Copy and paste it here</li>
             </ol>
           </div>
           <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-xs">
               🔒 Your API key is stored locally in your browser and never sent to our servers.
-              It's only used to communicate directly with OpenAI.
+              It's only used to communicate directly with Deepseek via OpenRouter.
             </p>
           </div>
         </div>

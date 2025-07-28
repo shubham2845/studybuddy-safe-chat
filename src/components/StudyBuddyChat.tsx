@@ -33,8 +33,8 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
   const [isLocked, setIsLocked] = useState(false);
   const [parentEmail, setParentEmail] = useState('');
   const [showParentSetup, setShowParentSetup] = useState(true);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
-  const [showApiSetup, setShowApiSetup] = useState(!localStorage.getItem('openai_api_key'));
+  const [apiKey, setApiKey] = useState(localStorage.getItem('deepseek_api_key') || '');
+  const [showApiSetup, setShowApiSetup] = useState(!localStorage.getItem('deepseek_api_key'));
   const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -79,19 +79,21 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
 
   const generateStudyResponse = async (userMessage: string): Promise<string> => {
     if (!apiKey) {
-      return "Please set up your OpenAI API key to get personalized study responses! 🔑";
+      return "Please set up your Deepseek API key to get personalized study responses! 🔑";
     }
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Study Buddy',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'deepseek/deepseek-r1-0528:free',
           messages: [
             {
               role: 'system',
@@ -117,7 +119,7 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from OpenAI');
+        throw new Error('Failed to get response from Deepseek');
       }
 
       const data = await response.json();
@@ -164,11 +166,11 @@ export const StudyBuddyChat: React.FC<StudyBuddyChatProps> = ({ studentName = "S
 
   const handleApiKeySetup = (key: string) => {
     setApiKey(key);
-    localStorage.setItem('openai_api_key', key);
+    localStorage.setItem('deepseek_api_key', key);
     setShowApiSetup(false);
     toast({
       title: "API Key Saved",
-      description: "OpenAI API key configured. Study buddy is ready!",
+      description: "Deepseek API key configured. Study buddy is ready!",
       variant: "default"
     });
   };
